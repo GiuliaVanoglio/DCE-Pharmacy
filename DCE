@@ -1,0 +1,51 @@
+ssc install dcreate
+ssc install blockdes
+ssc install evaldes
+
+* Genero la matrice attributi e livelli *
+matrix levmat= 3,3,3,3,3,3
+genfact, levels(levmat)
+
+* Rinomino le variabili per chiarezza *
+rename x1 accessibility
+rename x2 support
+rename x3 offer
+rename x4 convinience
+rename x5 privacy
+rename x6 product
+
+* Ricodifico partendo da 0 *
+recode accessibility (1=0) (2=1) (3=2)
+recode support (1=0) (2=1) (3=2)
+recode offer (1=0) (2=1) (3=2)
+recode convinience (1=0) (2=1) (3=2)
+recode privacy (1=0) (2=1) (3=2)
+recode product (1=0) (2=1) (3=2)
+
+* Applicazione del primo vincolo: accessibility == 0 e support, privacy, product != 0 *
+gen invalid1 = (accessibility == 0 & (support == 0 | privacy == 0 | product == 0))
+
+* Applicazione del secondo vincolo: accessibility == 2 e support, privacy, product != 2 *
+gen invalid2 = (accessibility == 2 & (support == 2 | privacy == 2 | product == 2))
+
+* Applicazione del terzo vincolo: accessibility == 1 e support != 0 *
+gen invalid3 = (accessibility == 1 & support == 0)
+
+* Combinazione dei vincoli e rimozione delle righe non valide *
+gen invalid = invalid1 | invalid2 | invalid3
+drop if invalid
+
+* Elimino le colonne dei vincoli per non visualizzarle *
+drop invalid invalid1 invalid2 invalid3
+
+* Genero la matrice di priors *
+matrix b=J(1,12,0)
+
+* Creo il disegno sperimentale con due alternative e numero minimo di scelte 12 *
+dcreate i.accessibility i.support i.offer i.convinience i.privacy i.product, nalt(2) nset(12) bmat(b)
+
+* Blocking *
+blockdes block, nblock(2)
+
+* Valutare l'efficienza *
+evaldes i.accessibility i.support i.offer i.convinience i.privacy i.product, bmat(b)
