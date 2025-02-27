@@ -1,0 +1,52 @@
+* 1. Creazione delle variabili dummy per le categorie
+gen Accessibility_immediate = (Accessibility_val_0 == 1)  
+gen Accessibility_days = (Accessibility_val_1 == 1)  
+gen Accessibility_inperson = (Accessibility_val_2 == 1)   
+
+gen Support_personalized = (Support_val_0 == 1)  
+gen Support_waiting = (Support_val_1 == 1)  
+gen Support_chatbot = (Support_val_2 == 1)   
+
+gen Offer_wide = (Offer_val_0 == 1)  
+gen Offer_sufficient = (Offer_val_1 == 1)  
+gen Offer_limited = (Offer_val_2 == 1) 
+
+gen Price_low = (Price_val_0 == 1)  
+gen Price_stable = (Price_val_1 == 1)  
+gen Price_high = (Price_val_2 == 1)  
+
+gen DataSecurity_high = (Data_val_0 == 1)  
+gen DataSecurity_moderate = (Data_val_1 == 1)  
+gen DataSecurity_low = (Data_val_2 == 1)  
+
+gen ProductSecurity_high = (Product_val_0 == 1)  
+gen ProductSecurity_moderate = (Product_val_1 == 1)  
+gen ProductSecurity_low = (Product_val_2 == 1)   
+
+* 2. Verifica che la variabile Età sia correttamente categorizzata
+tab Età
+
+* 3. Esegui il modello mlogit per ciascuna categoria di età
+
+mlogit Scelta Accessibility_immediate Accessibility_days Accessibility_inperson Support_personalized Support_waiting Support_chatbot Offer_wide Offer_sufficient Offer_limited Price_low Price_stable Price_high DataSecurity_low DataSecurity_moderate DataSecurity_high ProductSecurity_low ProductSecurity_moderate ProductSecurity_high if Età == 0, baseoutcome(0)
+estat ic  // Criteri di informazione (AIC e BIC)
+margins, dydx(*)  // Effetti marginali
+predict p_choice  // Previsione delle probabilità di scelta
+
+mlogit Scelta Accessibility_immediate Accessibility_days Accessibility_inperson Support_personalized Support_waiting Support_chatbot Offer_wide Offer_sufficient Offer_limited Price_low Price_stable Price_high DataSecurity_low DataSecurity_moderate DataSecurity_high ProductSecurity_low ProductSecurity_moderate ProductSecurity_high if Età == 1, baseoutcome(0)
+estat ic
+margins, dydx(*)
+predict p_choice
+
+mlogit Scelta Accessibility_immediate Accessibility_days Accessibility_inperson Support_personalized Support_waiting Support_chatbot Offer_wide Offer_sufficient Offer_limited Price_low Price_stable Price_high DataSecurity_low DataSecurity_moderate DataSecurity_high ProductSecurity_low ProductSecurity_moderate ProductSecurity_high if Età == 2, baseoutcome(0)
+estat ic
+margins, dydx(*)
+predict p_choice
+
+mlogit Scelta Accessibility_immediate Accessibility_days Accessibility_inperson Support_personalized Support_waiting Support_chatbot Offer_wide Offer_sufficient Offer_limited Price_low Price_stable Price_high DataSecurity_low DataSecurity_moderate DataSecurity_high ProductSecurity_low ProductSecurity_moderate ProductSecurity_high if Età == 3, baseoutcome(0)
+estat ic
+margins, dydx(*)
+predict p_choice
+
+* 4. Tabella dei coefficienti per tutte le categorie di età
+estout using "coefficients_per_eta.csv", cells(b(star)) stats(N ll chi2 r2_p) replace
