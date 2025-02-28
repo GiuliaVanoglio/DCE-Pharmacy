@@ -1,0 +1,149 @@
+import pandas as pd
+
+# Caricare i file
+variabili_df = pd.read_excel("Variabili.xlsx")  # File con le alternative e i valori
+risposte_df = pd.read_excel("Risposte.xlsx")  # File con le risposte degli utenti
+
+# Pulire i nomi delle colonne per evitare errori dovuti a spazi extra
+risposte_df.columns = risposte_df.columns.str.strip()
+
+# Rinominare la colonna "Alternative" nel file delle variabili per evitare ambiguità
+variabili_df.rename(columns={"Alternative": "Alternativa"}, inplace=True)
+
+# Liste delle domande
+domande_mare = ["Q1", "Q2", "Q3", "Q4", "Q5", "Q6"]
+domande_montagna = ["Q1b", "Q2b", "Q3b", "Q4b", "Q5b", "Q6b"]
+
+# Lista per salvare le righe finali
+final_data = []
+
+# Dati per le variabili specifiche a seconda del blocco, della domanda e dell'alternativa
+mare_valori = {
+    (1, 1): [0, 1, 1, 0, 2, 1],  # Domanda 1 alternativa 1
+    (1, 2): [1, 2, 2, 2, 0, 2],  # Domanda 1 alternativa 2
+    (2, 1): [1, 1, 0, 1, 1, 0],  # Domanda 2 alternativa 1
+    (2, 2): [0, 2, 1, 2, 2, 2],  # Domanda 2 alternativa 2
+    (3, 1): [1, 2, 1, 0, 1, 2],  # Domanda 3 alternativa 1
+    (3, 2): [0, 1, 2, 2, 2, 1],  # Domanda 3 alternativa 2
+    (4, 1): [2, 1, 0, 0, 0, 0],  # Domanda 4 alternativa 1
+    (4, 2): [1, 2, 2, 1, 1, 1],  # Domanda 4 alternativa 2
+    (5, 1): [0, 2, 0, 0, 1, 1],  # Domanda 5 alternativa 1
+    (5, 2): [1, 1, 1, 1, 2, 2],  # Domanda 5 alternativa 2
+    (6, 1): [2, 0, 0, 1, 0, 1],  # Domanda 6 alternativa 1
+    (6, 2): [1, 1, 2, 0, 1, 0]   # Domanda 6 alternativa 2
+}
+
+montagna_valori = {
+    (1, 1): [1, 1, 1, 2, 0, 1],  # Domanda 1 alternativa 1
+    (1, 2): [0, 2, 0, 1, 2, 2],  # Domanda 1 alternativa 2
+    (2, 1): [2, 1, 0, 0, 1, 1],  # Domanda 2 alternativa 1
+    (2, 2): [1, 2, 1, 1, 0, 0],  # Domanda 2 alternativa 2
+    (3, 1): [2, 1, 1, 2, 1, 0],  # Domanda 3 alternativa 1
+    (3, 2): [1, 1, 2, 0, 0, 2],  # Domanda 3 alternativa 2
+    (4, 1): [0, 1, 1, 1, 1, 2],  # Domanda 4 alternativa 1
+    (4, 2): [1, 2, 2, 0, 2, 1],  # Domanda 4 alternativa 2
+    (5, 1): [2, 0, 2, 0, 1, 0],  # Domanda 5 alternativa 1
+    (5, 2): [1, 2, 0, 1, 0, 1],  # Domanda 5 alternativa 2
+    (6, 1): [1, 1, 0, 2, 2, 2],  # Domanda 6 alternativa 1
+    (6, 2): [2, 1, 2, 1, 0, 1]   # Domanda 6 alternativa 2
+}
+
+# Controllo se la colonna "Preferisci Mare o Montagna?" esiste
+if "Preferisci Mare o Montagna?" not in risposte_df.columns:
+    print("Errore: La colonna 'Preferisci Mare o Montagna?' non esiste nel file Risposte.xlsx")
+    print("Colonne disponibili:", risposte_df.columns)
+else:
+    # Variabile per tenere traccia dell'OBSID globale, che continua tra i rispondenti
+    global_obsid = 1
+
+    # Creare un ID univoco per ogni rispondente (numero progressivo)
+    for idx, (_, riga) in enumerate(risposte_df.iterrows(), start=1):
+        # Assegna l'ID al rispondente
+        id_persona = idx  # Assegniamo un ID univoco progressivo
+
+        # Determinare le colonne corrette in base alla preferenza (Mare o Montagna)
+        if riga["Preferisci Mare o Montagna?"] == "Mare":
+            domande_utilizzate = domande_mare
+            blocco = 1  # Se la scelta è "Mare", il valore del blocco è 1
+            valori_per_blocco = mare_valori
+        else:
+            domande_utilizzate = domande_montagna
+            blocco = 2  # Se la scelta è "Montagna", il valore del blocco è 2
+            valori_per_blocco = montagna_valori
+
+        # Creare 6 righe per ogni risposta (una per alternativa scelta e una per quella non scelta)
+        for num_domanda, domanda in enumerate(domande_utilizzate, start=1):
+            alternativa_scelta = riga[domanda]  # "Alternativa 1" o "Alternativa 2"
+            alternativa_numero_scelta = 1 if alternativa_scelta == "Alternativa 1" else 2
+            alternativa_numero_non_scelta = 2 if alternativa_numero_scelta == 1 else 1
+
+            # Ottieni i valori corretti per l'alternativa scelta e non scelta
+            scelta_vals = valori_per_blocco[(num_domanda, alternativa_numero_scelta)]
+            non_scelta_vals = valori_per_blocco[(num_domanda, alternativa_numero_non_scelta)]
+
+            # Creare una nuova riga per l'alternativa scelta
+            riga_scelta = {
+                "ID Persona": id_persona,
+                "OBSID": global_obsid,
+                "Alternativa": alternativa_numero_scelta,
+                "Choice Set": num_domanda,
+                "Blocco": blocco,
+                "Scelta": 1,
+                "Accessibility": scelta_vals[0],
+                "Support": scelta_vals[1],
+                "Offer": scelta_vals[2],
+                "Price": scelta_vals[3],
+                "Data": scelta_vals[4],
+                "Product": scelta_vals[5],
+                "Sesso": riga["Sesso"],
+                "Età": riga["Età"],
+                "CAP": riga["CAP"],
+                "Titolo studi": riga["Titolo studi"],
+                "Professione": riga["Professione"]
+            }
+
+            # Creare una nuova riga per l'alternativa non scelta
+            riga_non_scelta = {
+                "ID Persona": id_persona,
+                "OBSID": global_obsid,
+                "Alternativa": alternativa_numero_non_scelta,
+                "Choice Set": num_domanda,
+                "Blocco": blocco,
+                "Scelta": 0,
+                "Accessibility": non_scelta_vals[0],
+                "Support": non_scelta_vals[1],
+                "Offer": non_scelta_vals[2],
+                "Price": non_scelta_vals[3],
+                "Data": non_scelta_vals[4],
+                "Product": non_scelta_vals[5],
+                "Sesso": riga["Sesso"],
+                "Età": riga["Età"],
+                "CAP": riga["CAP"],
+                "Titolo studi": riga["Titolo studi"],
+                "Professione": riga["Professione"]
+            }
+
+            # Aggiungere entrambe le righe alla lista finale
+            final_data.append(riga_scelta)
+            final_data.append(riga_non_scelta)
+
+            # Incrementa l'OBSID per la prossima coppia di alternative
+            global_obsid += 1
+
+    # Creare un nuovo dataframe con i dati finali
+    final_df = pd.DataFrame(final_data)
+
+    # Ordinare i dati in base a: ID Persona, OBSID
+    final_df = final_df.sort_values(by=["ID Persona", "OBSID"]).reset_index(drop=True)
+
+    # Ora sistemiamo le colonne nell'ordine che ti ho indicato
+    final_df = final_df[[
+        "ID Persona", "OBSID", "Alternativa", "Choice Set", "Blocco", 
+        "Scelta", "Accessibility", "Support", "Offer", "Price", "Data", "Product", 
+        "Sesso", "Età", "CAP", "Titolo studi", "Professione"
+    ]]
+
+    # Esportare in un nuovo file Excel
+    final_df.to_excel("Dati_Uniti_Completi_Con_Valori_Per_Variabili.xlsx", index=False)
+
+    print("File creato: Dati_Uniti_Completi_Con_Valori_Per_Variabili.xlsx")
