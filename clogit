@@ -1,3 +1,4 @@
+Carica database
 * 1. Creazione delle variabili dummy per le categorie
 gen Accessibility_immediate = (Accessibility_val_0 == 1)  
 gen Accessibility_days = (Accessibility_val_1 == 1)  
